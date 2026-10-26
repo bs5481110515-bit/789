@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ผจญภัยเกาะเรขาคณิต: พื้นที่ผิวและปริมาตร</title>
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--g:#2f9e5b;--gd:#1f6f40;--sand:#f7e4a6;--sky:#8fdcf7;--gold:#ffc83d;--wood:#8a5a2b;--wl:#c28a4a;--ink:#3b2412;--red:#e5484d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*{box-sizing:border-box}
+body{margin:0;min-height:100%;font-family:'Mali','Noto Sans Thai',Tahoma,sans-serif;color:var(--ink);background:linear-gradient(var(--sky) 0,#d9f4ff 40%,#8ed08a 40%,var(--g) 100%) fixed}
+.scr{display:none;max-width:560px;margin:0 auto;padding:14px}.scr.on{display:block}
+h1,h2{margin:.2em 0;text-align:center;text-shadow:0 3px 0 #fff8}
+h1{font-size:1.9rem}
+/* ปุ่มสไตล์ไอเทมไม้/เหรียญ */
+.btn{font:inherit;font-weight:700;font-size:1.05rem;color:#fff;background:linear-gradient(var(--wl),var(--wood));border:3px solid #5b3a18;border-radius:16px;padding:10px 18px;box-shadow:0 5px 0 #4a2e12;cursor:pointer;min-height:48px}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #4a2e12}
+.btn.gold{background:linear-gradient(#ffe27a,var(--gold));color:var(--ink);border-color:#c8921a;box-shadow:0 5px 0 #a8760f}
+.btn.sm{padding:6px 12px;font-size:.9rem;min-height:40px}
+.card{background:#fff8dc;border:4px solid var(--wood);border-radius:22px;padding:14px;box-shadow:0 6px 0 #0003;margin:10px 0}
+input{font:inherit;font-size:1.1rem;width:100%;padding:12px;border-radius:14px;border:3px solid var(--wood);margin:8px 0;background:#fff}
+.row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+/* แผนที่ */
+#mapbox{position:relative;height:430px;background:var(--sand);border:4px solid var(--wood);border-radius:22px;overflow:hidden;box-shadow:0 6px 0 #0003}
+#mapbox svg{position:absolute;inset:0;width:100%;height:100%}
+.node{position:absolute;transform:translate(-50%,-50%);width:78px;text-align:center;font-size:.78rem;font-weight:700;cursor:pointer;border:0;background:none;font-family:inherit;color:var(--ink)}
+.node i{display:grid;place-items:center;width:58px;height:58px;margin:0 auto 2px;border-radius:50%;font-style:normal;font-size:1.6rem;background:radial-gradient(circle at 35% 30%,#ffe98a,var(--gold) 60%,#d49a12);border:3px solid #8a5a2b;box-shadow:0 4px 0 #0004}
+.node.lock i{background:radial-gradient(circle at 35% 30%,#ddd,#999);filter:grayscale(.6)}
+.node.cur i{animation:b 1s infinite alternate}
+@keyframes b{to{transform:translateY(-6px)}}
+@media(prefers-reduced-motion:reduce){.node.cur i{animation:none}}
+/* HUD */
+.hud{display:flex;gap:8px;align-items:center;justify-content:space-between;background:var(--wood);color:#fff;border-radius:16px;padding:8px 12px;font-weight:700;font-size:1rem}
+.track{height:18px;background:#0003;border-radius:9px;margin:8px 0;position:relative;border:2px solid var(--wood)}
+.track b{display:block;height:100%;width:0;background:repeating-linear-gradient(45deg,var(--gold) 0 10px,#ffdc66 10px 20px);border-radius:7px;transition:width .4s}
+.track span{position:absolute;right:-4px;top:-9px;font-size:1.4rem}
+#cv{display:block;margin:0 auto;max-width:100%}
+.q{font-size:1.15rem;line-height:1.5}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.opts .btn{padding:14px 6px}
+.fb{border-radius:16px;padding:10px 12px;margin-top:10px;line-height:1.5}
+.fb.ok{background:#d6f5d6;border:3px solid var(--g)}.fb.no{background:#ffe1df;border:3px solid var(--red)}
+.big{font-size:2.4rem;text-align:center}
+table{width:100%;border-collapse:collapse;font-size:.9rem}td,th{padding:5px;border-bottom:1px solid #c9a96a;text-align:center}
+.top{display:flex;justify-content:space-between;gap:6px;margin-bottom:6px}
+</style></head><body>
+
+<!-- หน้าใส่ชื่อ -->
+<section class="scr on" id="s-name">
+  <h1>🏝️ ผจญภัยเกาะเรขาคณิต</h1>
+  <h2 style="font-size:1.1rem">พื้นที่ผิวและปริมาตร ม.3</h2>
+  <div class="card"><div class="big">🧭</div>
+    <p>นักผจญภัยคนใหม่ ใส่ชื่อของเธอเพื่อเริ่มออกเดินทางและบันทึกสมบัติ</p>
+    <input id="nm" maxlength="24" placeholder="ชื่อนักผจญภัย" autocomplete="off">
+    <div class="row"><button class="btn gold" onclick="start()">เริ่มผจญภัย</button></div></div>
+</section>
+
+<!-- แผนที่เลือกด่าน -->
+<section class="scr" id="s-map">
+  <div class="top"><div class="hud" style="flex:1"><span id="who"></span><span id="coins"></span></div>
+    <button class="btn sm" onclick="toggleMusic()" id="mbtn">🎵 เปิดเพลง</button></div>
+  <div id="mapbox"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M20 90 C60 85 80 75 70 62 S20 55 30 42 S80 38 60 25 S40 14 50 8" fill="none" stroke="#a8742f" stroke-width="1.6" stroke-dasharray="3 2.5" stroke-linecap="round"/></svg></div>
+  <div class="row" style="margin-top:12px"><button class="btn" onclick="dash()">📜 แดชบอร์ดของฉัน</button></div>
+</section>
+
+<!-- หน้าเล่น -->
+<section class="scr" id="s-play">
+  <div class="hud"><span id="h-lv"></span><span id="h-hp"></span><span id="h-sc"></span><span id="h-t"></span></div>
+  <div class="track"><b id="bar"></b><span>🧰</span></div>
+  <div class="card"><canvas id="cv" width="180" height="130"></canvas>
+    <div class="q" id="qt"></div>
+    <div class="opts" id="opts"></div>
+    <div id="inp" style="display:none"><input id="ans" inputmode="decimal" placeholder="พิมพ์คำตอบ (ใช้ π = 3.14)"><div class="row"><button class="btn gold" onclick="submitInput()">ส่งคำตอบ</button></div></div>
+    <div id="fb"></div></div>
+</section>
+
+<!-- สรุปผล -->
+<section class="scr" id="s-res">
+  <h2 id="r-t"></h2><div class="card" id="r-b"></div>
+  <div class="row"><button class="btn gold" onclick="showMap()">กลับแผนที่</button><button class="btn" id="r-again"></button></div>
+</section>
+
+<!-- แดชบอร์ด -->
+<section class="scr" id="s-dash">
+  <h2>📜 แดชบอร์ดนักผจญภัย</h2><div class="card" id="d-b"></div>
+  <div class="row"><button class="btn gold" onclick="showMap()">กลับแผนที่</button></div>
+</section>
+
+<script>
+/* ===== ข้อมูลด่านและโจทย์ (แก้ไขตรงนี้ได้) =====
+ q=โจทย์ a=คำตอบ u=หน่วย w=ตัวเลือกหลอก(3 ตัว) sol=เฉลยวิธีคิด tip=คำแนะนำเมื่อทำผิด s=รูปทรง
+ ข้อที่ 3 ของทุกด่านเป็นโหมดพิมพ์คำตอบเอง (ใช้ π = 3.14) */
+const LV=[
+{n:'ป่าปริซึม',e:'🌴',q:[
+ {s:'prism',q:'กล่องสมบัติรูปปริซึมสี่เหลี่ยมมุมฉาก กว้าง 4 ยาว 5 สูง 3 ซม. มีปริมาตรเท่าไร?',a:60,u:'ลบ.ซม.',w:[47,12,94],sol:'V = กว้าง×ยาว×สูง = 4×5×3 = 60',tip:'ปริมาตรปริซึม = พื้นที่ฐาน × สูง ไม่ใช่การบวกความยาว'},
+ {s:'prism',q:'ปริซึมสามเหลี่ยมมุมฉาก ฐานมีด้าน 3, 4, 5 ซม. (ด้าน 3 และ 4 ตั้งฉากกัน) สูง 10 ซม. มีพื้นที่ผิวทั้งหมดเท่าไร?',a:132,u:'ตร.ซม.',w:[60,72,120],sol:'พื้นที่ฐาน = ½×3×4 = 6 พื้นที่ผิว = 2×6 + (3+4+5)×10 = 12+120 = 132',tip:'พื้นที่ผิว = 2×พื้นที่ฐาน + เส้นรอบฐาน×สูง อย่าลืมบวกฐานทั้งสองด้าน'},
+ {s:'prism',q:'ปริซึมฐานสามเหลี่ยม ฐานยาว 6 สูง 8 ซม. ปริซึมสูง 10 ซม. มีปริมาตรกี่ ลบ.ซม.?',a:240,u:'ลบ.ซม.',sol:'พื้นที่ฐาน = ½×6×8 = 24 V = 24×10 = 240',tip:'อย่าลืมคูณ ½ ตอนหาพื้นที่สามเหลี่ยม'}]},
+{n:'ถ้ำทรงกระบอก',e:'🛢️',q:[
+ {s:'cyl',q:'ทรงกระบอกรัศมี 7 ซม. สูง 10 ซม. มีปริมาตรเท่าไร? (π = 3.14)',a:1538.6,u:'ลบ.ซม.',w:[153.86,439.6,219.8],sol:'V = πr²h = 3.14×7²×10 = 3.14×49×10 = 1,538.6',tip:'รัศมีต้องยกกำลังสอง (r²) ไม่ใช่คูณ 2'},
+ {s:'cyl',q:'ทรงกระบอกรัศมี 5 ซม. สูง 10 ซม. มีพื้นที่ผิวทั้งหมดเท่าไร? (π = 3.14)',a:471,u:'ตร.ซม.',w:[314,235.5,785],sol:'A = 2πr(r+h) = 2×3.14×5×(5+10) = 471',tip:'พื้นที่ผิวทั้งหมด รวมฝาบนและล่างด้วย (314 คือพื้นที่ผิวข้างอย่างเดียว)'},
+ {s:'cyl',q:'กระป๋องทรงกระบอกรัศมี 3 ซม. สูง 5 ซม. จุของเหลวได้กี่ ลบ.ซม.? (π = 3.14)',a:141.3,u:'ลบ.ซม.',sol:'V = 3.14×3²×5 = 3.14×9×5 = 141.3',tip:'ใช้สูตร V = πr²h'}]},
+{n:'ภูเขาพีระมิด',e:'🔺',q:[
+ {s:'pyr',q:'พีระมิดฐานสี่เหลี่ยมจัตุรัสด้านละ 6 ซม. สูง 4 ซม. มีปริมาตรเท่าไร?',a:48,u:'ลบ.ซม.',w:[144,24,72],sol:'V = ⅓×พื้นที่ฐาน×สูง = ⅓×36×4 = 48',tip:'พีระมิดมีปริมาตร 1 ใน 3 ของปริซึมที่ฐานและสูงเท่ากัน อย่าลืม ⅓'},
+ {s:'cone',q:'กรวยรัศมี 3 ซม. สูง 4 ซม. (ความยาวด้านเอียง 5 ซม.) มีพื้นที่ผิวทั้งหมดเท่าไร? (π = 3.14)',a:75.36,u:'ตร.ซม.',w:[47.1,28.26,37.68],sol:'A = πr(r+l) = 3.14×3×(3+5) = 75.36',tip:'ใช้ความยาวด้านเอียง l ไม่ใช่ความสูง h และอย่าลืมพื้นที่ฐาน'},
+ {s:'cone',q:'กรวยรัศมี 6 ซม. สูง 10 ซม. มีปริมาตรกี่ ลบ.ซม.? (π = 3.14)',a:376.8,u:'ลบ.ซม.',sol:'V = ⅓πr²h = ⅓×3.14×36×10 = 376.8',tip:'V = ⅓πr²h'}]},
+{n:'ทะเลสาบทรงกลม',e:'🔮',q:[
+ {s:'sph',q:'ลูกแก้วทรงกลมรัศมี 3 ซม. มีปริมาตรเท่าไร? (π = 3.14)',a:113.04,u:'ลบ.ซม.',w:[84.78,37.68,339.12],sol:'V = 4/3πr³ = 4/3×3.14×27 = 113.04',tip:'ต้องคูณ 4/3 และยกกำลังสาม (r³)'},
+ {s:'sph',q:'ทรงกลมรัศมี 5 ซม. มีพื้นที่ผิวเท่าไร? (π = 3.14)',a:314,u:'ตร.ซม.',w:[78.5,157,523.33],sol:'A = 4πr² = 4×3.14×25 = 314',tip:'พื้นที่ผิวทรงกลม = 4πr² (523.33 คือปริมาตร)'},
+ {s:'sph',q:'ลูกบอลรัศมี 6 ซม. มีปริมาตรกี่ ลบ.ซม.? (π = 3.14)',a:904.32,u:'ลบ.ซม.',sol:'V = 4/3×3.14×216 = 904.32',tip:'V = 4/3πr³'}]},
+{n:'หมู่บ้านนักประดิษฐ์',e:'🏡',q:[
+ {s:'cyl',q:'ถังน้ำทรงกระบอกรัศมี 1 ม. สูง 2 ม. จุน้ำได้กี่ลิตร? (π = 3.14, 1 ลบ.ม. = 1,000 ลิตร)',a:6280,u:'ลิตร',w:[628,3140,12560],sol:'V = 3.14×1²×2 = 6.28 ลบ.ม. = 6,280 ลิตร',tip:'หาปริมาตรเป็น ลบ.ม. แล้วคูณ 1,000 เพื่อแปลงเป็นลิตร'},
+ {s:'cone',q:'ไอศกรีมโคนรัศมี 3 ซม. กรวยสูง 10 ซม. มีไอศกรีมครึ่งทรงกลมวางบนปากโคน ปริมาตรรวมเท่าไร? (π = 3.14)',a:150.72,u:'ลบ.ซม.',w:[94.2,207.24,56.52],sol:'กรวย = ⅓×3.14×9×10 = 94.2 ครึ่งทรงกลม = ½×113.04 = 56.52 รวม = 150.72',tip:'ครึ่งทรงกลมใช้ครึ่งหนึ่งของ 4/3πr³ แล้วบวกกับปริมาตรกรวย'},
+ {s:'cyl',q:'เสาทรงกระบอกรัศมี 0.5 ม. สูง 4 ม. ต้องทาสีเฉพาะผิวข้างกี่ ตร.ม.? (π = 3.14)',a:12.56,u:'ตร.ม.',sol:'พื้นที่ผิวข้าง = 2πrh = 2×3.14×0.5×4 = 12.56',tip:'ผิวข้าง = 2πrh (ไม่รวมฝาบน-ล่าง)'}]}
+];
+const POS=[[20,88],[70,64],[30,43],[62,26],[50,10]]; // ตำแหน่งด่านบนแผนที่ (% x,y)
+const TIME=60; // วินาทีต่อข้อ
+const $=id=>document.getElementById(id), f=x=>(+x.toFixed(2)).toLocaleString('en-US');
+
+/* ===== ข้อมูลผู้เล่น (localStorage) ===== */
+let DB={},P=null,S={};
+try{DB=JSON.parse(localStorage.getItem('svadv')||'{}')}catch(e){}
+function save(){try{localStorage.setItem('svadv',JSON.stringify(DB))}catch(e){}}
+function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));scrollTo(0,0)}
+
+function start(){
+  const n=$('nm').value.trim(); if(!n){$('nm').focus();return}
+  P=DB[n]=DB[n]||{name:n,unlocked:0,coins:0,right:0,total:0,time:0,best:[]};
+  startMusic(); showMap();
+}
+
+/* ===== แผนที่ ===== */
+function showMap(){
+  $('who').textContent='🧑‍🌾 '+P.name; $('coins').textContent='💰 '+P.coins;
+  const mb=$('mapbox'); mb.querySelectorAll('.node').forEach(n=>n.remove());
+  LV.forEach((l,i)=>{
+    const b=document.createElement('button'),lock=i>P.unlocked;
+    b.className='node'+(lock?' lock':'')+(i===P.unlocked?' cur':'');
+    b.style.left=POS[i][0]+'%';b.style.top=POS[i][1]+'%';
+    b.innerHTML='<i>'+(lock?'🔒':l.e)+'</i>ด่าน '+(i+1)+'<br>'+l.n+(P.best[i]!=null?'<br>⭐'+P.best[i]:'');
+    b.onclick=()=>lock?sfx(false):play(i); mb.appendChild(b);
+  });
+  show('map');
+}
+
+/* ===== วาดรูปทรง 3 มิติแบบการ์ตูน ===== */
+function drawShape(t){
+  const c=$('cv').getContext('2d');c.clearRect(0,0,180,130);c.lineWidth=3;c.strokeStyle='#5b3a18';c.lineJoin='round';
+  const g=(x0,x1,a,b)=>{const q=c.createLinearGradient(x0,0,x1,0);q.addColorStop(0,a);q.addColorStop(1,b);return q};
+  const ell=(x,y,rx,ry,fill)=>{c.beginPath();c.ellipse(x,y,rx,ry,0,0,7);c.fillStyle=fill;c.fill();c.stroke()};
+  const poly=(pts,fill)=>{c.beginPath();pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();c.fillStyle=fill;c.fill();c.stroke()};
+  if(t==='sph'){const q=c.createRadialGradient(70,45,6,90,65,52);q.addColorStop(0,'#fff');q.addColorStop(.3,'#7fd4f5');q.addColorStop(1,'#2d7fc4');c.beginPath();c.arc(90,65,52,0,7);c.fillStyle=q;c.fill();c.stroke()}
+  if(t==='cyl'){c.beginPath();c.rect(40,30,100,75);c.fillStyle=g(40,140,'#ff9f5a','#e0631f');c.fill();ell(90,105,50,16,'#e0631f');c.beginPath();c.rect(41,31,98,74);c.fillStyle=g(40,140,'#ff9f5a','#e0631f');c.fill();ell(90,105,50,16,'#d4561a');c.fillStyle=g(40,140,'#ff9f5a','#e0631f');c.fillRect(41,30,98,75);ell(90,30,50,16,'#ffd08a')}
+  if(t==='cone'){poly([[90,10],[35,105],[145,105]],g(35,145,'#ff8fb1','#d94b7d'));ell(90,105,55,16,'#c23a69');poly([[90,10],[35,105],[90,121],[145,105]],g(35,145,'#ff8fb1','#d94b7d'))}
+  if(t==='pyr'){poly([[90,12],[30,100],[90,120]],'#ffd04a');poly([[90,12],[90,120],[155,92]],'#e0a210')}
+  if(t==='prism'){poly([[30,50],[110,50],[110,115],[30,115]],'#7fd48a');poly([[30,50],[60,25],[140,25],[110,50]],'#b9f0bf');poly([[110,50],[140,25],[140,90],[110,115]],'#3fa356')}
+}
+
+/* ===== ระบบเล่น ===== */
+function play(i){
+  S={lv:i,qi:0,hp:3,sc:0,ok:0,t:TIME,spent:0}; show('play'); next();
+}
+function next(){
+  const L=LV[S.lv];
+  if(S.qi>=3||S.hp<=0)return finish();
+  const q=S.q=L.q[S.qi]; S.t=TIME; S.done=false; S.t0=Date.now();
+  $('h-lv').textContent='ด่าน '+(S.lv+1); $('bar').style.width=(S.qi/3*100)+'%';
+  $('qt').textContent='ข้อ '+(S.qi+1)+'/3  '+q.q; $('fb').innerHTML='';
+  drawShape(q.s); hud();
+  const o=$('opts'); o.innerHTML='';
+  if(q.w){ // โหมดเลือกคำตอบ (ปุ่มเป็นป้ายไม้)
+    $('inp').style.display='none'; o.style.display='grid';
+    [q.a,...q.w].map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).forEach(([,v])=>{
+      const b=document.createElement('button');b.className='btn';b.textContent='💎 '+f(v)+' '+q.u;b.onclick=()=>answer(v);o.appendChild(b)});
+  }else{ // โหมดพิมพ์คำตอบ
+    o.style.display='none'; $('inp').style.display='block'; $('ans').value='';
+  }
+  clearInterval(S.iv); S.iv=setInterval(()=>{S.t--;hud();if(S.t<=0)answer(null)},1000);
+}
+function submitInput(){const v=parseFloat($('ans').value.replace(/,/g,''));if(isNaN(v))return $('ans').focus();answer(v)}
+function hud(){$('h-hp').textContent='❤️'.repeat(S.hp)+'🖤'.repeat(3-S.hp);$('h-sc').textContent='💰 '+S.sc;$('h-t').textContent='⏳ '+S.t+' วิ'}
+function answer(v){
+  if(S.done)return; S.done=true; clearInterval(S.iv);
+  const q=S.q, good=v!==null&&Math.abs(v-q.a)<=Math.max(.02,Math.abs(q.a)*.001);
+  S.spent+=Math.round((Date.now()-S.t0)/1000); P.total++;
+  document.querySelectorAll('#opts .btn').forEach(b=>b.disabled=true);
+  if(good){S.ok++;P.right++;S.sc+=100+S.t*2}else S.hp--;
+  sfx(good); hud();
+  $('fb').innerHTML='<div class="fb '+(good?'ok':'no')+'"><b>'+(good?'🎉 ถูกต้อง! ได้สมบัติ +'+(100+S.t*2):(v===null?'⌛ หมดเวลา!':'💥 ยังไม่ใช่นะ เสียหัวใจ 1 ดวง'))+'</b><br>'
+   +(good?'':'💡 '+q.tip+'<br>')+'📖 เฉลย: '+q.sol+'<br>คำตอบ: <b>'+f(q.a)+' '+q.u+'</b></div><div class="row" style="margin-top:10px"><button class="btn gold" onclick="S.qi++;next()">ไปต่อ</button></div>';
+}
+
+/* ===== สรุปผล ===== */
+function finish(){
+  clearInterval(S.iv);
+  const pass=S.ok>=2&&S.hp>0, stars=S.ok;
+  P.coins+=S.sc; P.time+=S.spent;
+  if(P.best[S.lv]==null||S.sc>P.best[S.lv])P.best[S.lv]=S.sc;
+  if(pass&&S.lv===P.unlocked&&S.lv<LV.length-1)P.unlocked++;
+  save(); $('bar').style.width='100%';
+  $('r-t').textContent=pass?(S.lv===LV.length-1?'🏆 พิชิตเกาะแล้ว!':'🎊 ผ่านด่าน '+(S.lv+1)):'😵 ยังไม่ผ่านด่านนี้';
+  $('r-b').innerHTML='<div class="big">'+'⭐'.repeat(stars)+'☆'.repeat(3-stars)+'</div><p>ตอบถูก <b>'+S.ok+'/3</b> ข้อ<br>สมบัติที่ได้ <b>'+S.sc+'</b><br>ใช้เวลา <b>'+S.spent+'</b> วินาที<br>หัวใจเหลือ '+'❤️'.repeat(S.hp)+'</p><p>'+(pass?'เยี่ยมมาก! ด่านถัดไปปลดล็อกแล้ว':'ต้องตอบถูกอย่างน้อย 2 ข้อ ลองทบทวนเฉลยแล้วเล่นใหม่นะ')+'</p>';
+  $('r-again').textContent='เล่นด่านนี้อีกครั้ง'; $('r-again').onclick=()=>play(S.lv);
+  show('res');
+}
+
+/* ===== แดชบอร์ดรายบุคคล ===== */
+function dash(){
+  const acc=P.total?Math.round(P.right/P.total*100):0;
+  let h='<p><b>🧑‍🌾 '+P.name+'</b></p><p>💰 สมบัติสะสม: <b>'+P.coins+'</b><br>🎯 ความแม่นยำ: <b>'+acc+'%</b> ('+P.right+'/'+P.total+' ข้อ)<br>⏱️ เวลาที่ใช้รวม: <b>'+P.time+'</b> วินาที<br>🗺️ ด่านที่ปลดล็อก: <b>'+(P.unlocked+1)+'/'+LV.length+'</b></p><table><tr><th>ด่าน</th><th>คะแนนสูงสุด</th></tr>';
+  LV.forEach((l,i)=>h+='<tr><td>'+l.e+' '+l.n+'</td><td>'+(P.best[i]!=null?P.best[i]:'-')+'</td></tr>');
+  h+='</table>';
+  const all=Object.values(DB);
+  if(all.length>1){h+='<p style="margin-top:12px"><b>🏅 อันดับในเครื่องนี้</b></p><table>'+all.sort((a,b)=>b.coins-a.coins).map(p=>'<tr><td>'+p.name.replace(/</g,'&lt;')+'</td><td>💰 '+p.coins+'</td></tr>').join('')+'</table>'}
+  $('d-b').innerHTML=h; show('dash');
+}
+
+/* ===== เสียง (Web Audio ไม่ใช้ไฟล์ภายนอก) ===== */
+let ac,mus=false,mt;const NOTES=[262,330,392,330,294,349,440,349,262,330,392,523,440,392,330,294];
+function tone(fr,d,ty,v){if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type=ty||'triangle';o.frequency.value=fr;g.gain.setValueAtTime(v||.08,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}
+function sfx(ok){ok?(tone(660,.12,'square',.05),setTimeout(()=>tone(880,.2,'square',.05),110)):tone(150,.35,'sawtooth',.06)}
+function startMusic(){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(!mus)toggleMusic()}catch(e){}}
+function toggleMusic(){
+  if(!ac){startMusic();return}
+  mus=!mus;clearInterval(mt);let i=0;
+  if(mus)mt=setInterval(()=>tone(NOTES[i++%NOTES.length],.4,'triangle',.04),380);
+  $('mbtn').textContent=mus?'🔇 ปิดเพลง':'🎵 เปิดเพลง';
+}
+$('nm').addEventListener('keydown',e=>{if(e.key==='Enter')start()});
+$('ans').addEventListener('keydown',e=>{if(e.key==='Enter')submitInput()});
+</script></body></html>
